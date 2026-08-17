@@ -17,6 +17,9 @@ const app = express();
 app.use(cors({ origin: FRONTEND_URL, methods: CORS_METHODS }));
 app.use(express.json());
 
+// Raiz redireciona para a documentação Swagger
+app.get('/', (_req, res) => res.redirect('/docs'));
+
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {

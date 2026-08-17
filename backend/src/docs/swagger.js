@@ -1,5 +1,14 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
+// Render injeta RENDER_EXTERNAL_URL automaticamente em produção.
+// Em desenvolvimento, cai no localhost.
+const servers = process.env.RENDER_EXTERNAL_URL
+  ? [
+      { url: process.env.RENDER_EXTERNAL_URL, description: 'Produção (Render)' },
+      { url: 'http://localhost:3001', description: 'Desenvolvimento local' },
+    ]
+  : [{ url: 'http://localhost:3001', description: 'Desenvolvimento local' }];
+
 const options = {
   definition: {
     openapi: '3.0.3',
@@ -17,9 +26,7 @@ const options = {
         'e ouvir o evento **`new-message`**, cujo payload segue o schema `Message` (ver *Schemas* abaixo).',
       ].join('\n'),
     },
-    servers: [
-      { url: 'http://localhost:3001', description: 'Desenvolvimento local' },
-    ],
+    servers,
     tags: [
       { name: 'Webhook Meta', description: 'Rotas consumidas pela Cloud API da Meta' },
       { name: 'Util', description: 'Rotas utilitárias' },
