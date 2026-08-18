@@ -88,7 +88,7 @@ Chamada pela Meta a cada evento: mensagem nova, recibo de entrega/leitura,
 etc. Fluxo:
 1. Valida a assinatura `X-Hub-Signature-256` (HMAC-SHA256 com `META_APP_SECRET`) — payload sem assinatura válida é rejeitado com **403**.
 2. Responde **200** imediatamente (exigência da Meta).
-3. Extrai as mensagens (`value.messages`; eventos de status são ignorados), salva em memória e emite `new-message` via Socket.io para quem estiver conectado.
+3. Extrai as mensagens (`value.messages`), salva em memória e emite `new-message` via Socket.io para quem estiver conectado. Recibos de entrega/leitura (`value.statuses` com `status: sent/delivered/read`) continuam ignorados; falhas de envio (`status: failed`) são logadas e emitidas via Socket.io no evento `message-failed`.
 
 **Testar sem `META_APP_SECRET` configurado** (validação de assinatura é
 pulada — só para dev local):
@@ -173,10 +173,20 @@ curl http://localhost:3001/conversations
 Lista as mensagens recebidas (DTO `{ id, from, name, text, timestamp }`).
 Aceita `?from=` para filtrar por um contato específico.
 
+> ⚠️ **`?from=` exige o `wa_id` no formato canônico: DDD + número
+> concatenados, sem `+` e sem o 9º dígito inicial de celulares brasileiros.**
+> Ex.: `+55 11 98765-4321` → `551187654321` (não `5511987654321`). A
+> comparação em [`store.js`](src/services/store.js) é exata — filtrar com o 9
+> incluído não retorna nada. Essa regra vale para **todo** `wa_id` no
+> projeto (campo `from` recebido no webhook, `waId` de `GET /conversations`,
+> `to` ao enviar) — veja o callout completo no topo do Swagger
+> ([`/docs`](http://localhost:3001/docs)). Prefira sempre copiar o `waId` de
+> `GET /conversations` em vez de digitar o número manualmente.
+
 **Testar:**
 ```bash
 curl http://localhost:3001/messages
-curl "http://localhost:3001/messages?from=5511999998888"
+curl "http://localhost:3001/messages?from=551187654321"
 ```
 
 ### `POST /messages`

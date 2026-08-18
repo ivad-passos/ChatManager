@@ -44,10 +44,16 @@ export function createChatRouter() {
    *       - in: query
    *         name: from
    *         required: false
-   *         description: Filtra mensagens de um contato (wa_id, ex. 5511999998888)
+   *         description: >
+   *           Filtra mensagens de um contato pelo `wa_id`. A comparação é EXATA
+   *           (string igual), então o valor precisa ser DDD + número concatenados,
+   *           **sem `+` e sem o 9º dígito inicial** de celulares brasileiros
+   *           (ex.: `+55 11 98765-4321` vira `551187654321`, não `5511987654321`).
+   *           Buscar com o 9 incluído não encontra nada. Prefira copiar o `waId`
+   *           retornado por `GET /conversations` em vez de digitar manualmente.
    *         schema:
    *           type: string
-   *           example: "5511999998888"
+   *           example: "551187654321"
    *     responses:
    *       200:
    *         description: Lista de mensagens recebidas

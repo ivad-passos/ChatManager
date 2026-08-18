@@ -30,6 +30,16 @@ const options = {
         '### Tempo real (WebSocket)',
         'O OpenAPI/Swagger documenta apenas HTTP. O frontend também deve se conectar via Socket.io',
         'e ouvir o evento **`new-message`**, cujo payload segue o schema `Message` (ver *Schemas* abaixo).',
+        '',
+        '### ⚠️ Formato do número (`wa_id`)',
+        'Toda vez que um número de telefone aparece como `wa_id` — nos campos `from`/`waId` que a API',
+        'devolve, ou nos campos `to` que você envia — o formato é **DDD + número, concatenados, sem o',
+        '`+` e sem o 9º dígito inicial** do número de celular brasileiro.',
+        'Exemplo: `+55 11 98765-4321` vira `551187654321` (não `5511987654321`).',
+        'O `GET /messages?from=` e a comparação usada em `GET /conversations` fazem correspondência',
+        'exata — buscar com o 9 incluído não encontra a conversa. Use sempre o `waId`/`from` retornado',
+        'por `GET /conversations` ou `GET /messages` como fonte da verdade, em vez de digitar o número',
+        'manualmente.',
       ].join('\n'),
     },
     servers,
@@ -49,7 +59,13 @@ const options = {
           description: 'DTO emitido no evento Socket.io `new-message`',
           properties: {
             id: { type: 'string', example: 'wamid.TESTE123' },
-            from: { type: 'string', example: '5511999998888' },
+            from: {
+              type: 'string',
+              description:
+                'wa_id do remetente: DDD + número concatenados, sem "+" e sem o 9º dígito ' +
+                'inicial de celulares brasileiros (ex.: +55 11 98765-4321 vira "551187654321").',
+              example: '5511999998888',
+            },
             name: { type: 'string', nullable: true, example: 'Maria Silva' },
             text: { type: 'string', example: 'Olá, gostaria de agendar uma fisioterapia' },
             timestamp: { type: 'integer', example: 1786838400 },
@@ -59,7 +75,14 @@ const options = {
           type: 'object',
           description: 'Resumo de uma conversa, agrupado por contato (wa_id)',
           properties: {
-            waId: { type: 'string', example: '5511999998888' },
+            waId: {
+              type: 'string',
+              description:
+                'DDD + número concatenados, sem "+" e sem o 9º dígito inicial de celulares ' +
+                'brasileiros (ex.: +55 11 98765-4321 vira "551187654321"). Use este valor, e não ' +
+                'o número digitado manualmente, como "to" nas rotas de envio ou "from" no filtro de GET /messages.',
+              example: '5511999998888',
+            },
             name: { type: 'string', nullable: true, example: 'Maria Silva' },
             messageCount: { type: 'integer', example: 3 },
             lastMessage: { type: 'string', example: 'Olá, gostaria de agendar uma fisioterapia' },
@@ -72,7 +95,10 @@ const options = {
           properties: {
             to: {
               type: 'string',
-              description: 'Número do destinatário (wa_id, com código do país)',
+              description:
+                'wa_id do destinatário: DDD + número concatenados, sem "+" e sem o 9º dígito ' +
+                'inicial de celulares brasileiros (ex.: +55 11 98765-4321 vira "551187654321"). ' +
+                'Prefira copiar o "waId" retornado por GET /conversations em vez de digitar o número.',
               example: '5511999998888',
             },
             text: { type: 'string', example: 'Oi, tudo bom?' },
@@ -84,7 +110,10 @@ const options = {
           properties: {
             to: {
               type: 'string',
-              description: 'Número do destinatário (wa_id, com código do país)',
+              description:
+                'wa_id do destinatário: DDD + número concatenados, sem "+" e sem o 9º dígito ' +
+                'inicial de celulares brasileiros (ex.: +55 11 98765-4321 vira "551187654321"). ' +
+                'Prefira copiar o "waId" retornado por GET /conversations em vez de digitar o número.',
               example: '5511999998888',
             },
             templateName: {

@@ -18,6 +18,10 @@ export function addMessage(message) {
   }
 }
 
+// Comparação exata (===): `from` precisa estar no formato canônico do wa_id
+// (DDD + número concatenados, sem "+" e sem o 9º dígito inicial de celulares
+// brasileiros — ex.: "551187654321", não "5511987654321"). Não há normalização
+// aqui, então filtrar com o 9 incluído simplesmente não encontra nada.
 export function listMessages({ from } = {}) {
   if (!from) return [...messages];
   return messages.filter((message) => message.from === from);

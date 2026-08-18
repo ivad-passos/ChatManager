@@ -186,11 +186,22 @@ Pontos importantes:
   (ver seção 7).
 
 **✅ Implementado:** [`backend/src/services/parser.js`](../backend/src/services/parser.js)
-lê `value.messages` (ignora `value.statuses`) e mapeia para o DTO
-`{ id, from, name, text, timestamp }`. Tipos não-texto viram um placeholder
-(`[imagem]`, `[áudio]`, etc.) — o conteúdo real da mídia **não é baixado**.
-**⏳ Não implementado:** processamento de `value.statuses` (não há indicação
-de "entregue"/"lido" na UI), download de mídia recebida.
+lê `value.messages` e mapeia para o DTO `{ id, from, name, text, timestamp }`
+(`parseMetaPayload`). Tipos não-texto viram um placeholder (`[imagem]`,
+`[áudio]`, etc.) — o conteúdo real da mídia **não é baixado**. `value.statuses`
+com `status: "failed"` é extraído por `parseMetaStatusFailures` e emitido via
+Socket.io no evento `message-failed` (ver [`webhook.js`](../backend/src/routes/webhook.js)).
+**⏳ Não implementado:** processamento de `status: "sent"/"delivered"/"read"`
+(não há indicação de "entregue"/"lido" na UI, só falhas), download de mídia
+recebida.
+
+> ⚠️ **Todo `wa_id` neste documento e na API segue o mesmo formato: DDD +
+> número concatenados, sem `+` e sem o 9º dígito inicial** de celulares
+> brasileiros. Ex.: `+55 11 98765-4321` → `551187654321` (não
+> `5511987654321`). Isso vale para `contacts[].wa_id`, `messages[].from`,
+> `statuses[].recipient_id` recebidos no webhook, e para o `to` usado ao
+> enviar. Detalhes e o motivo prático (comparação exata em `store.js`) estão
+> na seção 6 abaixo.
 
 ---
 
@@ -209,6 +220,19 @@ de "entregue"/"lido" na UI), download de mídia recebida.
 - `text.body`: limite de **4096 caracteres**.
 - `text.preview_url`: se `true`, gera preview de links contidos no texto.
 - Só é aceito **dentro da janela de 24h** (seção 11); fora dela, use template.
+
+**⚠️ Formato do `wa_id` — DDD + número, sem `+` e sem o 9º dígito inicial:**
+no envio (`to`), a própria Cloud API da Meta é tolerante e aceita o número
+**com ou sem** o 9 (ela normaliza internamente) — testado com
+`to: "5511987654321"` (com 9), Meta aceitou e devolveu `wa_id: "551187654321"`
+(sem 9) no `contacts[].wa_id` da resposta. Porém, **em todo o resto do
+projeto** (o `from` recebido no webhook, o `waId` de `GET /conversations`, e
+o filtro `?from=` de `GET /messages`) o valor é **sempre sem o 9**, e a
+comparação usada é exata (string igual, sem normalização — ver
+[`store.js`](../backend/src/services/store.js)). Ou seja: para reenviar a um
+contato ou filtrar mensagens dele, use o `wa_id` **sem o 9**, exatamente como
+a Meta e o backend retornam — não o número como o usuário digitaria
+(`+55 11 98765-4321` → use `551187654321`, não `5511987654321`).
 
 **✅ Implementado:** `sendTextMessage()` em
 [`backend/src/services/meta.js`](../backend/src/services/meta.js) — normaliza

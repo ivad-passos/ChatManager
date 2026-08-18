@@ -56,3 +56,38 @@ function extractText(message) {
   }
   return NON_TEXT_PLACEHOLDERS[message.type] ?? `[mensagem do tipo ${message.type}]`;
 }
+
+/**
+ * Extrai falhas de envio (`value.statuses[].status === 'failed'`) do payload da Meta.
+ * Recibos de entrega/leitura (sent/delivered/read) continuam ignorados de propósito —
+ * só falhas são reportadas, pois são o único status acionável sem UI de chat ainda.
+ */
+export function parseMetaStatusFailures(body) {
+  if (body?.object !== 'whatsapp_business_account') {
+    return [];
+  }
+
+  const failures = [];
+
+  for (const entry of body.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const value = change?.value;
+      if (!value?.statuses) continue;
+
+      for (const status of value.statuses) {
+        if (status.status !== 'failed') continue;
+
+        const [error] = status.errors ?? [];
+        failures.push({
+          id: status.id,
+          to: status.recipient_id,
+          timestamp: Number(status.timestamp),
+          errorCode: error?.code ?? null,
+          errorMessage: error?.title ?? error?.message ?? 'Falha no envio',
+        });
+      }
+    }
+  }
+
+  return failures;
+}

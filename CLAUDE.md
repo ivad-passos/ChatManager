@@ -41,9 +41,23 @@ should be read instead of re-derived:
 `POST /webhook` → `verifySignature.js` checks `X-Hub-Signature-256` (HMAC-SHA256
 over the raw body, keyed by `META_APP_SECRET`) → responds `200` immediately
 (Meta requirement — it retries for up to 36h otherwise) → `parser.js`
-(`parseMetaPayload`) flattens Meta's nested JSON into `{ id, from, name, text, timestamp }`,
-ignoring `value.statuses` events → `store.js` (`addMessage`) appends
-in-memory → `io.emit('new-message', dto)` to all connected Socket.io clients.
+(`parseMetaPayload`) flattens Meta's nested JSON into `{ id, from, name, text, timestamp }`
+→ `store.js` (`addMessage`) appends in-memory → `io.emit('new-message', dto)`
+to all connected Socket.io clients. Delivery/read receipts (`value.statuses`
+with `status: sent/delivered/read`) are still ignored; `status: failed` is
+extracted by `parseMetaStatusFailures` and emitted as `io.emit('message-failed', ...)`.
+
+### wa_id format — no leading "9"
+Every `wa_id` in this codebase (`from` on received messages, `waId` in
+`GET /conversations`, `to` when sending) is DDD + number concatenated, with
+no `+` and no Brazilian mobile's leading "9" digit — e.g. `+55 11 98765-4321`
+→ `551187654321`, not `5511987654321`. Meta's send API (`to` field) tolerates
+the 9 and normalizes it internally, but everywhere else in this codebase the
+comparison is an exact string match with zero normalization
+(`store.js`'s `listMessages`/`listConversations` filter/group by `from` as-is)
+— passing a `wa_id` with the 9 to `GET /messages?from=` silently matches
+nothing. Full explanation: `docs/META_CLOUD_API_RULES.md` section 6 and the
+Swagger `info.description` (served at `/docs`).
 
 ### Sending flow
 `routes/chat.js` (`POST /messages`, `POST /messages/template`) → `services/meta.js`
