@@ -21,6 +21,12 @@ const options = {
         'Responsável por receber os eventos da **API Oficial da Meta (Cloud API)** via webhook',
         'e repassá-los em tempo real ao frontend (Next.js na Vercel) via **Socket.io**.',
         '',
+        '### Testando a integração sem o frontend',
+        '1. Envie uma mensagem do seu WhatsApp para o número de teste da Meta.',
+        '2. Veja-a em **GET /conversations** e **GET /messages**.',
+        '3. Responda pelo **POST /messages** (texto livre, janela de 24h)',
+        '   ou **POST /messages/template** (fora da janela, ex.: `hello_world`).',
+        '',
         '### Tempo real (WebSocket)',
         'O OpenAPI/Swagger documenta apenas HTTP. O frontend também deve se conectar via Socket.io',
         'e ouvir o evento **`new-message`**, cujo payload segue o schema `Message` (ver *Schemas* abaixo).',
@@ -29,6 +35,11 @@ const options = {
     servers,
     tags: [
       { name: 'Webhook Meta', description: 'Rotas consumidas pela Cloud API da Meta' },
+      {
+        name: 'Chat (teste sem frontend)',
+        description:
+          'Rotas para testar a integração de ponta a ponta pelo Swagger: ver mensagens recebidas e enviar mensagens via Cloud API.',
+      },
       { name: 'Util', description: 'Rotas utilitárias' },
     ],
     components: {
@@ -42,6 +53,123 @@ const options = {
             name: { type: 'string', nullable: true, example: 'Maria Silva' },
             text: { type: 'string', example: 'Olá, gostaria de agendar uma fisioterapia' },
             timestamp: { type: 'integer', example: 1786838400 },
+          },
+        },
+        Conversation: {
+          type: 'object',
+          description: 'Resumo de uma conversa, agrupado por contato (wa_id)',
+          properties: {
+            waId: { type: 'string', example: '5511999998888' },
+            name: { type: 'string', nullable: true, example: 'Maria Silva' },
+            messageCount: { type: 'integer', example: 3 },
+            lastMessage: { type: 'string', example: 'Olá, gostaria de agendar uma fisioterapia' },
+            lastTimestamp: { type: 'integer', example: 1786838400 },
+          },
+        },
+        SendTextInput: {
+          type: 'object',
+          required: ['to', 'text'],
+          properties: {
+            to: {
+              type: 'string',
+              description: 'Número do destinatário (wa_id, com código do país)',
+              example: '5511999998888',
+            },
+            text: { type: 'string', example: 'Oi, tudo bom?' },
+          },
+        },
+        SendTemplateInput: {
+          type: 'object',
+          required: ['to', 'templateName'],
+          properties: {
+            to: {
+              type: 'string',
+              description: 'Número do destinatário (wa_id, com código do país)',
+              example: '5511999998888',
+            },
+            templateName: {
+              type: 'string',
+              description: 'Nome do template aprovado no painel da Meta',
+              example: 'hello_world',
+            },
+            languageCode: {
+              type: 'string',
+              description: 'Idioma do template (opcional, padrão en_US)',
+              example: 'en_US',
+            },
+            components: {
+              type: 'array',
+              description:
+                'Preenchimento das variáveis do template (opcional). ' +
+                'Formato oficial da Cloud API: um item por seção do template ' +
+                '(header/body/button) com seus respectivos parameters.',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['header', 'body', 'button'], example: 'body' },
+                  sub_type: {
+                    type: 'string',
+                    description: 'Obrigatório apenas quando type = "button" (ex.: quick_reply, url)',
+                    example: 'quick_reply',
+                  },
+                  index: {
+                    type: 'string',
+                    description: 'Obrigatório apenas quando type = "button" (posição do botão, começando em 0)',
+                    example: '0',
+                  },
+                  parameters: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        type: { type: 'string', example: 'text' },
+                        text: { type: 'string', example: 'Maria' },
+                      },
+                    },
+                  },
+                },
+              },
+              example: [
+                { type: 'body', parameters: [{ type: 'text', text: 'Maria' }] },
+              ],
+            },
+          },
+        },
+        MetaSendResponse: {
+          type: 'object',
+          description: 'Resposta de sucesso da Cloud API ao aceitar uma mensagem',
+          properties: {
+            messaging_product: { type: 'string', example: 'whatsapp' },
+            contacts: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  input: { type: 'string', example: '5511999998888' },
+                  wa_id: { type: 'string', example: '5511999998888' },
+                },
+              },
+            },
+            messages: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'wamid.HBgNNTUxMTk5OTk5ODg4OBUCABIYFjNFQjBDMEMxRjY5OTlFOEUzAA==' },
+                },
+              },
+            },
+          },
+        },
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            error: { type: 'string', example: 'Campos "to" e "text" são obrigatórios.' },
+            details: {
+              type: 'object',
+              description: 'Detalhes do erro retornados pela Meta (quando houver)',
+              nullable: true,
+            },
           },
         },
         MetaWebhookPayload: {

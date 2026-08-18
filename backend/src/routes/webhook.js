@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { parseMetaPayload } from '../services/parser.js';
+import { addMessage } from '../services/store.js';
+import { verifyMetaSignature } from '../services/verifySignature.js';
 
 export function createWebhookRouter(io) {
   const router = Router();
@@ -65,9 +67,10 @@ export function createWebhookRouter(io) {
    *     summary: Recebimento de mensagens do WhatsApp
    *     description: >
    *       Chamado pela Meta a cada evento (mensagem recebida, recibo de status, etc.).
-   *       Sempre responde **200 imediatamente**. Mensagens recebidas são convertidas
-   *       no DTO `Message` e emitidas via Socket.io no evento `new-message`.
-   *       Eventos de status (entregue/lido) são ignorados.
+   *       Valida a assinatura **X-Hub-Signature-256** (HMAC-SHA256 com `META_APP_SECRET`)
+   *       antes de processar. Sempre responde **200 imediatamente** para payloads
+   *       autênticos. Mensagens recebidas são convertidas no DTO `Message` e emitidas
+   *       via Socket.io no evento `new-message`. Eventos de status (entregue/lido) são ignorados.
    *     requestBody:
    *       required: true
    *       content:
@@ -99,8 +102,15 @@ export function createWebhookRouter(io) {
    *     responses:
    *       200:
    *         description: Evento aceito (o processamento é assíncrono)
+   *       403:
+   *         description: Assinatura X-Hub-Signature-256 inválida (payload não veio da Meta)
    */
   router.post('/', (req, res) => {
+    if (!verifyMetaSignature(req)) {
+      console.warn('[webhook] assinatura X-Hub-Signature-256 inválida — payload rejeitado');
+      return res.sendStatus(403);
+    }
+
     res.sendStatus(200);
 
     try {
@@ -108,6 +118,7 @@ export function createWebhookRouter(io) {
 
       for (const message of messages) {
         console.log(`[webhook] nova mensagem de ${message.from} (${message.name ?? 'sem nome'}): "${message.text}"`);
+        addMessage(message);
         io.emit('new-message', message);
       }
     } catch (error) {

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:developers.facebook.com)",
+      "WebFetch(domain:www.whatsapp.com)",
+      "WebFetch(domain:business.whatsapp.com)",
+      "WebFetch(domain:www.meta.com)"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente (segredos) — nunca commitar, só o .env.example
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Builds (frontend Next.js, quando existir)
+.next/
+out/
+dist/
+build/
+
+# Claude Code — settings pessoais (settings.json do projeto é compartilhado e fica versionado)
+.claude/settings.local.json
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
