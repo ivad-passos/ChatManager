@@ -76,49 +76,8 @@ O sistema terá a barra lateral (Sidebar) padrão com as opções de navegação
 
 ---
 
-## 6. Tickets de Desenvolvimento (Backlog MVP)
+## 6. Backlog de Desenvolvimento
 
-### Épico 1: Setup e Configuração Meta
-- [ ] **TK-01: Setup App Meta**
-  - Criar App no painel Meta for Developers.
-  - Cadastrar o número (novo ou da clínica) e gerar `Token Permanente`.
-- [x] **TK-02: Setup Backend (Render)**
-  - Projeto Express + Socket.io.
-  - Configurar `.env` com Tokens da Meta.
-  - Rota `GET /webhook` para validação da Meta (`hub.challenge`).
-  - Bind em `0.0.0.0` + `process.env.PORT`, rota `GET /health` (anti cold start) e `render.yaml` na raiz do monorepo.
-  - Documentação Swagger disponível em `/docs`.
-
-### Épico 2: Motor de Recepção (Backend)
-- [x] **TK-03: Processamento do Webhook**
-  - Rota `POST /webhook` para receber mensagens.
-  - Mapear JSON complexo da Meta para um DTO simples: `{ from, text, timestamp }`.
-  - Retornar HTTP 200 imediatamente.
-- [x] **TK-04: Emissão WebSocket**
-  - Configurar Socket.io para disparar o evento `new-message` contendo o DTO estruturado.
-
-### Épico 3: Frontend - UI Base (Vercel)
-- [ ] **TK-05: Setup Frontend (Next.js/React)**
-  - Inicializar projeto, configurar TailwindCSS.
-  - Criar variáveis CSS globais baseadas no protótipo (ex: `--primary: #055BAA`, `--accent: #EA7E26`).
-- [ ] **TK-06: Layout Base (Sidebar)**
-  - Componentizar o Sidebar com logo PhysioVilas e links de navegação.
-
-### Épico 4: Frontend - Telas do MVP
-- [ ] **TK-07: Tela Home (Resumo Básico)**
-  - Implementar UI de cards de "Conversas Hoje" conforme protótipo estático.
-- [ ] **TK-08: Tela de Atendimento (UI Chat)**
-  - Implementar layout dividido (lista à esquerda, chat à direita).
-  - Componentizar balões de mensagem.
-  - Bloquear campo de input com mensagem de aviso.
-- [ ] **TK-09: Conexão Real-time**
-  - Integrar `socket.io-client` na tela de Atendimento.
-  - Atualizar o estado da lista e do chat quando o evento `new-message` chegar do Render.
-
-### Épico 5: Go-Live
-- [ ] **TK-10: Reunião de Alinhamento com a Clínica**
-  - Explicar o impacto da perda do WhatsApp no celular.
-  - Decidir sobre uso de número novo vs. número antigo.
-- [ ] **TK-11: Deploy e Homologação**
-  - Deploy final (Render + Vercel).
-  - Atualizar URL do Webhook na Meta para apontar para a produção do Render.
+O backlog de tickets (organizado por equipe: Integração, Backend, Frontend
+e Banco de Dados/Persistência) vive em documento dedicado, separado deste
+PRD: `docs/BACKLOG.md`.
